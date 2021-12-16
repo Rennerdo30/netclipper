@@ -1,4 +1,4 @@
 package netclipper;
 
 
-public enum Methods { STRING, FILE }
+public enum Methods { PUB_KEY, STRING, FILE }

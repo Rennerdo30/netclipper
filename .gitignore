@@ -6,3 +6,4 @@
 .gradle/7.1/gc.properties
 .gradle/buildOutputCleanup/cache.properties
 .gradle/vcs-1/gc.properties
+*.log
