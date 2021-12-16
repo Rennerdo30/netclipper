@@ -1,0 +1,8 @@
+
+*.bin
+*.class
+*.lock
+.gradle/7.1/dependencies-accessors/gc.properties
+.gradle/7.1/gc.properties
+.gradle/buildOutputCleanup/cache.properties
+.gradle/vcs-1/gc.properties
