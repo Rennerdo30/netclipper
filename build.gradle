@@ -1,8 +1,7 @@
 plugins {
     id 'java'
-}
-plugins {
     id 'application'
+    id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
 
 group 'netclipper'
@@ -11,6 +10,13 @@ version '1.0-SNAPSHOT'
 application {
     mainClass = 'netclipper.NetClipper'
 }
+
+shadowJar {
+    manifest {
+        attributes 'Main-Class': 'netclipper.NetClipper'
+    }
+}
+
 
 repositories {
     mavenCentral()
@@ -24,15 +30,9 @@ dependencies {
 
     implementation 'com.github.Karan-Gandhi:Java-Networking-Library:v1.1'
     implementation 'com.google.code.gson:gson:2.8.9'
-
-    // https://mvnrepository.com/artifact/commons-codec/commons-codec
     implementation 'commons-codec:commons-codec:1.15'
-
-// https://mvnrepository.com/artifact/com.esotericsoftware/kryonet
     implementation 'com.esotericsoftware:kryonet:2.22.0-RC1'
-// https://mvnrepository.com/artifact/commons-io/commons-io
     implementation 'commons-io:commons-io:2.11.0'
-
 }
 
 test {

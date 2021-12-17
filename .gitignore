@@ -8,3 +8,4 @@
 .gradle/vcs-1/gc.properties
 *.log
 tmp_clipboard
+build
