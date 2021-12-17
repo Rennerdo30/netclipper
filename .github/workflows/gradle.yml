@@ -42,7 +42,7 @@ jobs:
         path: build/libs  
     - name: Build project
       run: |
-        zip --junk-paths netclipper build/libs/* README.md             
+        zip --junk-paths netclipper build/libs/* README.md CHANGELOG.md LICENSE        
     - name: release
       uses: actions/create-release@v1
       id: create_release
