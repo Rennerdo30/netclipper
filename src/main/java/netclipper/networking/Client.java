@@ -5,6 +5,7 @@ import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import com.google.gson.Gson;
 import netclipper.FileTransferable;
+import netclipper.OperatingSystem;
 import netclipper.Util;
 import netclipper.transfer.file.FileTransferEnd;
 import netclipper.transfer.file.FileTransferHelper;
@@ -109,14 +110,19 @@ public class Client {
                 do {
                     try {
                         clipboard.setContents(stringSelection, null);
-                    } catch (Exception ex)
-                    {
+                    } catch (Exception ex) {
                         retry = true;
                     }
 
                     count++;
-                } while (retry && count < 10);
 
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                } while (retry && count < 10);
 
 
             } else if (response.method == Methods.FILE_START) {
@@ -153,10 +159,14 @@ public class Client {
                         File tmpFile = helper.store();
                         lastRecFile = tmpFile;
 
-                        List listOfFiles = new ArrayList();
-                        listOfFiles.add(tmpFile);
-                        FileTransferable ft = new FileTransferable(listOfFiles);
-                        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ft, (clipboard, contents) -> System.out.println("Lost ownership"));
+                        if (Util.getOS() != OperatingSystem.MACOS) {
+                            List listOfFiles = new ArrayList();
+                            listOfFiles.add(tmpFile);
+                            FileTransferable ft = new FileTransferable(listOfFiles);
+                            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(ft, (clipboard, contents) -> System.out.println("Lost ownership"));
+                        } else {
+                            Util.copyToClipboard(tmpFile.getAbsolutePath());
+                        }
 
                         fileTransferHelpers.remove(fileTransferEnd.fileID);
                     }
@@ -226,12 +236,12 @@ public class Client {
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
-                    } else
-                        try {
-                            Thread.sleep(2500);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
+                    }
+                    try {
+                        Thread.sleep(2500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

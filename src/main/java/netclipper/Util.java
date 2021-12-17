@@ -140,4 +140,28 @@ public class Util {
         ObjectInputStream is = new ObjectInputStream(in);
         return is.readObject();
     }
+
+    public static void copyToClipboard(String filepath) {
+        String[] cmd = {"osascript", "-e", "tell app \"Finder\" to set the clipboard to ( POSIX file \""+filepath+"\" )"};
+        try {
+            Runtime.getRuntime().exec(cmd);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public static OperatingSystem getOS()
+    {
+        String os = System.getProperty("os.name").toLowerCase();
+
+        if (os.contains("windows"))
+        {
+            return OperatingSystem.WINDOWS;
+        } else if (os.contains("mac os x"))
+        {
+            return OperatingSystem.MACOS;
+        }
+
+        return OperatingSystem.LINUX;
+    }
 }

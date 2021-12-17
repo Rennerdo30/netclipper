@@ -17,6 +17,8 @@ public class NetClipper {
 
     public static void main(String[] args) {
 
+        System.out.println("Current OS: '" + System.getProperty("os.name") + "'");
+
         boolean isServer = args != null && args.length == 1 && args[0].equalsIgnoreCase("server");
 
         //Log.set(LEVEL_TRACE);
