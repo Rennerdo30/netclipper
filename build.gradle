@@ -27,6 +27,10 @@ dependencies {
 
     // https://mvnrepository.com/artifact/commons-codec/commons-codec
     implementation 'commons-codec:commons-codec:1.15'
+
+// https://mvnrepository.com/artifact/com.esotericsoftware/kryonet
+    implementation 'com.esotericsoftware:kryonet:2.22.0-RC1'
+
 }
 
 test {
