@@ -17,8 +17,8 @@ public class NetClipper {
 
         if (isServer) {
             System.out.println("Starting server...");
-            try {
-                Server server = new Server("0.0.0.0", 50333, 100, true);
+            try {<
+                Server server = new Server("0.0.0.0", 50333, 128000, true);
                 server.start();
             } catch (Exception ex) {
                 ex.printStackTrace();

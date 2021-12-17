@@ -1,8 +1,10 @@
 package netclipper;
 
+import com.google.gson.Gson;
 import com.karangandhi.networking.TCP.Connection;
 import com.karangandhi.networking.TCP.TCPServer;
 import com.karangandhi.networking.utils.Message;
+import netclipper.transfer.file.FileTransferPart;
 
 import java.io.IOException;
 import java.security.PrivateKey;
@@ -80,12 +82,10 @@ public class Server extends TCPServer {
                 this.sendMessage(messageToBroadcast, this.clients.get(entry.getKey()));
             }
 
-        } else if (receivedMessage.getId() == Methods.FILE) {
-            // Print the message recieved
-            FileTransfer fileTransfer = (FileTransfer) receivedMessage.messageBody;
-            System.out.println("Message recieved (file): " + fileTransfer.filename);
+        } else if (receivedMessage.getId() == Methods.FILE_START || receivedMessage.getId() == Methods.FILE_PART ||receivedMessage.getId() == Methods.FILE_END) {
 
-            Message<Methods, FileTransfer> messageToBroadcast = new Message<>(Methods.FILE, fileTransfer);
+            System.out.println((String) receivedMessage.messageBody);
+            Message<Methods, String> messageToBroadcast = new Message<>(receivedMessage.getId(), receivedMessage.messageBody);
             // Send the message to Everyone
             this.sendAll(messageToBroadcast);
         }
