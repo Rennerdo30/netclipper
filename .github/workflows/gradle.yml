@@ -42,9 +42,9 @@ jobs:
       id: create_release
       with:
         draft: false
-        prerelease: false
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        prerelease: true
+        tag_name: ${{ github.sha }}
+        release_name: Release ${{ github.sha }}
         body_path: CHANGELOG.md
       env:
         GITHUB_TOKEN: ${{ github.token }}
