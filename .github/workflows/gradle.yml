@@ -39,7 +39,10 @@ jobs:
     - uses: actions/upload-artifact@v2
       with:
         name: Package
-        path: build/libs       
+        path: build/libs  
+    - name: Build project
+      run: |
+        zip --junk-paths netclipper build/libs/* README.md             
     - name: release
       uses: actions/create-release@v1
       id: create_release
@@ -52,3 +55,13 @@ jobs:
         artifacts: build/libs/*.jar"
       env:
         GITHUB_TOKEN: ${{ github.token }}
+    - name: Upload Release Asset
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+        asset_path: ./netclipper.zip
+        asset_name: netclipper.zip
+        asset_content_type: application/zip        
