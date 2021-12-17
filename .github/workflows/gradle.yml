@@ -25,7 +25,13 @@ jobs:
       with:
         java-version: '11'
         distribution: 'adopt'
+        cache: gradle
+        architecture: x64
+    - name: Validate Gradle wrapper
+      uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
     - name: Build with Gradle
-      uses: gradle/gradle-build-action@4137be6a8bf7d7133955359dbd952c0ca73b1021
+      run: ./gradlew shadowJar
+    - uses: actions/upload-artifact@v2
       with:
-        arguments: shadowJar
+        name: Package
+        path: build/libs
