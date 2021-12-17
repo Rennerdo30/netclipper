@@ -5,7 +5,10 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.minlog.Log;
 import netclipper.networking.Client;
 import netclipper.networking.Server;
+import org.apache.commons.io.FileUtils;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,6 +21,15 @@ public class NetClipper {
     public static void main(String[] args) {
 
         System.out.println("Current OS: '" + System.getProperty("os.name") + "'");
+
+        var clipboardFolder = new File("tmp_clipboard");
+        try {
+            FileUtils.deleteDirectory(clipboardFolder);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        clipboardFolder.mkdirs();
+
 
         boolean isServer = args != null && args.length == 1 && args[0].equalsIgnoreCase("server");
 

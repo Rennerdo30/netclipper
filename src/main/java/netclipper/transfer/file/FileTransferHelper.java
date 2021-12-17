@@ -37,7 +37,7 @@ public class FileTransferHelper {
     }
 
     public File store() {
-        File file = new File(this.fileTransferStart.filename);
+        File file = new File("tmp_clipboard/" + this.fileTransferStart.filename);
 
         try {
             Files.write(file.toPath(), Util.gzipUncompress(Base64.decodeBase64(getCompleteBuffer())));

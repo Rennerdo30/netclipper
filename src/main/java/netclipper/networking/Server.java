@@ -108,7 +108,7 @@ public class Server {
                             }
                         }
                     } else {
-                        System.err.println("Got message, but not of correct type! " + object.toString());
+                        //System.err.println("Got message, but not of correct type! " + object.toString());
                     }
                 }
             });
