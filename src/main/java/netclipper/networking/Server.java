@@ -4,6 +4,9 @@ import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import netclipper.Util;
+import netclipper.transfer.file.FileTransferEnd;
+import netclipper.transfer.file.FileTransferPart;
+import netclipper.transfer.file.FileTransferStart;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -64,9 +67,45 @@ public class Server {
                                 server.sendToTCP(entry.getKey(), response);
                             }
 
-                        } else if (request.method == Methods.FILE_START || request.method == Methods.FILE_PART || request.method == Methods.FILE_END) {
-                            System.out.println(request.payload);
-                            server.sendToAllExceptTCP(connection.getID(), request);
+                        } else if (request.method == Methods.FILE_START ) {
+                            System.out.println("Message recieved: " + request.payload);
+
+                            FileTransferStart payload = (FileTransferStart) request.getPayload(privateKey);
+                            System.out.println("payload: " + payload);
+
+                            for (Map.Entry<Integer, PublicKey> entry : Server.clientKeys.entrySet()) {
+                                if (entry.getKey() == connection.getID())
+                                    continue;
+
+                                Message response = new Message(Methods.FILE_START, entry.getValue(), payload);
+                                server.sendToTCP(entry.getKey(), response);
+                            }
+                        }else if (request.method == Methods.FILE_PART) {
+                            System.out.println("Message recieved: " + request.payload);
+
+                            FileTransferPart payload = (FileTransferPart) request.getPayload(privateKey);
+                            System.out.println("payload: " + payload);
+
+                            for (Map.Entry<Integer, PublicKey> entry : Server.clientKeys.entrySet()) {
+                                if (entry.getKey() == connection.getID())
+                                    continue;
+
+                                Message response = new Message(Methods.FILE_PART, entry.getValue(), payload);
+                                server.sendToTCP(entry.getKey(), response);
+                            }
+                        }else if (request.method == Methods.FILE_END) {
+                            System.out.println("Message recieved: " + request.payload);
+
+                            FileTransferEnd payload = (FileTransferEnd) request.getPayload(privateKey);
+                            System.out.println("payload: " + payload);
+
+                            for (Map.Entry<Integer, PublicKey> entry : Server.clientKeys.entrySet()) {
+                                if (entry.getKey() == connection.getID())
+                                    continue;
+
+                                Message response = new Message(Methods.FILE_END, entry.getValue(), payload);
+                                server.sendToTCP(entry.getKey(), response);
+                            }
                         }
                     } else {
                         System.err.println("Got message, but not of correct type! " + object.toString());

@@ -17,6 +17,7 @@ import java.awt.datatransfer.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.nio.channels.ScatteringByteChannel;
 import java.nio.file.Files;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -42,9 +43,7 @@ public class Client {
         }
     }
 
-    private static String lastClipboard = "";
-    private static File lastFile = null;
-
+    private static Object lastClipboard = "";
 
     private final PublicKey publicKey;
     private final PrivateKey privateKey;
@@ -104,7 +103,20 @@ public class Client {
                 lastClipboard = payload;
                 Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
                 StringSelection stringSelection = new StringSelection(payload);
-                clipboard.setContents(stringSelection, null);
+
+                boolean retry = false;
+                int count = 0;
+                do {
+                    try {
+                        clipboard.setContents(stringSelection, null);
+                    } catch (Exception ex)
+                    {
+                        retry = true;
+                    }
+
+                    count++;
+                } while (retry && count < 10);
+
 
 
             } else if (response.method == Methods.FILE_START) {
@@ -159,66 +171,68 @@ public class Client {
         final Client client = this;
         new Thread(() -> {
             while (true) {
-                Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-                if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
-                    try {
-                        String data = (String) clipboard.getData(DataFlavor.stringFlavor);
-                        if (!lastClipboard.equals(data) && data != null && this.serverKey != null) {
-                            client.clientSocket.sendTCP(new Message(Methods.STRING, this.serverKey, data));
+                try {
+                    Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+                    if (clipboard.isDataFlavorAvailable(DataFlavor.javaFileListFlavor)) {
+                        try {
+                            Transferable t = clipboard.getContents(null);
+                            java.util.List<File> files = (java.util.List<File>) t.getTransferData(DataFlavor.javaFileListFlavor);
+                            if (files != null) {
+                                for (File file : files) {
+                                    System.out.println(file);
+                                    if (file != null && (lastClipboard == null || !lastClipboard.equals(file))) {
+                                        lastClipboard = file;
 
-                            lastClipboard = data;
-                            System.out.println("new clipboard data: " + lastClipboard);
-                        }
-                    } catch (UnsupportedFlavorException e) {
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                } else if (clipboard.isDataFlavorAvailable(DataFlavor.javaFileListFlavor)) {
-                    try {
-                        Transferable t = clipboard.getContents(null);
-                        java.util.List<File> files = (java.util.List<File>) t.getTransferData(DataFlavor.javaFileListFlavor);
-                        if (files != null) {
-                            for (File file : files) {
-                                System.out.println(file);
-                                if (file != null && (lastFile == null || !lastFile.equals(file))) {
-                                    lastFile = file;
+                                        String fileData = Base64.encodeBase64URLSafeString(Util.gzipCompress(Files.readAllBytes(file.toPath())));
+                                        List<String> fileDataParts = Util.splitEqually(fileData, 8192);
 
-                                    String fileData = Base64.encodeBase64URLSafeString(Util.gzipCompress(Files.readAllBytes(file.toPath())));
-                                    List<String> fileDataParts = Util.splitEqually(fileData, 8192);
+                                        final String fileID = UUID.randomUUID().toString();
+                                        FileTransferStart transferStart = new FileTransferStart();
+                                        transferStart.fileID = fileID;
+                                        transferStart.packageCount = fileDataParts.size();
+                                        transferStart.filename = file.getName();
+                                        client.clientSocket.sendTCP(new Message<>(Methods.FILE_START, serverKey, transferStart));
 
-                                    final String fileID = UUID.randomUUID().toString();
-                                    FileTransferStart transferStart = new FileTransferStart();
-                                    transferStart.fileID = fileID;
-                                    transferStart.packageCount = fileDataParts.size();
-                                    transferStart.filename = file.getName();
-                                    client.clientSocket.sendTCP(new Message<>(Methods.FILE_START, serverKey, transferStart));
+                                        for (long i = 0; i < fileDataParts.size(); i++) {
+                                            FileTransferPart fileTransfer = new FileTransferPart();
+                                            fileTransfer.fileID = fileID;
+                                            fileTransfer.idx = i;
+                                            fileTransfer.part = fileDataParts.get(Math.toIntExact(i));
+                                            client.clientSocket.sendTCP(new Message<>(Methods.FILE_PART, serverKey, fileTransfer));
+                                        }
 
-                                    for (long i = 0; i < fileDataParts.size(); i++) {
-                                        FileTransferPart fileTransfer = new FileTransferPart();
-                                        fileTransfer.fileID = fileID;
-                                        fileTransfer.idx = i;
-                                        fileTransfer.part = fileDataParts.get(Math.toIntExact(i)) + "\0";
-                                        client.clientSocket.sendTCP(new Message<>(Methods.FILE_PART, serverKey, fileTransfer));
+                                        FileTransferEnd transferEnd = new FileTransferEnd();
+                                        transferEnd.fileID = fileID;
+                                        client.clientSocket.sendTCP(new Message<>(Methods.FILE_END, serverKey, transferEnd));
                                     }
-
-                                    FileTransferEnd transferEnd = new FileTransferEnd();
-                                    transferEnd.fileID = fileID;
-                                    client.clientSocket.sendTCP(new Message<>(Methods.FILE_END, serverKey, transferEnd));
                                 }
                             }
+                        } catch (UnsupportedFlavorException e) {
+                            e.printStackTrace();
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
-                    } catch (UnsupportedFlavorException e) {
-                        e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    System.out.println("file in clipboard!");
-                }
+                        System.out.println("file in clipboard!");
 
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
+                    } else if (clipboard.isDataFlavorAvailable(DataFlavor.stringFlavor)) {
+                        try {
+                            String data = (String) clipboard.getData(DataFlavor.stringFlavor);
+                            if (!lastClipboard.equals(data) && data != null && this.serverKey != null) {
+                                client.clientSocket.sendTCP(new Message(Methods.STRING, this.serverKey, data));
+
+                                lastClipboard = data;
+                                System.out.println("new clipboard data: " + lastClipboard);
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    } else
+                        try {
+                            Thread.sleep(2500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }

@@ -53,7 +53,6 @@ public class Message<T> {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        0
 
         this.payload = base64;
     }
