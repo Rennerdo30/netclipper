@@ -16,6 +16,7 @@ import org.apache.commons.codec.binary.Base64;
 import java.awt.*;
 import java.awt.datatransfer.*;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.channels.ScatteringByteChannel;
@@ -29,7 +30,7 @@ public class Client {
 
     public static void run() {
         try {
-            com.esotericsoftware.kryonet.Client clientSocket = new com.esotericsoftware.kryonet.Client(819200, 204800);
+            com.esotericsoftware.kryonet.Client clientSocket = new com.esotericsoftware.kryonet.Client(8192000, 2048000);
             InetAddress address = clientSocket.discoverHost(54777, 5000);
 
             if (address != null) {
@@ -51,7 +52,7 @@ public class Client {
     private final com.esotericsoftware.kryonet.Client clientSocket;
 
     private PublicKey serverKey;
-    private Map<String, FileTransferHelper> fileTransferHelpers = new HashMap<>();
+    private Map<Integer, FileTransferHelper> fileTransferHelpers = new HashMap<>();
     private File lastRecFile = null;
 
     public Client(com.esotericsoftware.kryonet.Client clientSocket) {
@@ -76,6 +77,10 @@ public class Client {
         try {
             clientSocket.start();
             clientSocket.connect(5000, address, tcpPort, udpPort);
+
+            clientSocket.setKeepAliveTCP(10000);
+            clientSocket.setTimeout(25000);
+            clientSocket.setIdleThreshold(0.8f);
 
             clientSocket.sendTCP(new Message<>(Methods.PUB_KEY, this.publicKey));
         } catch (IOException e) {
@@ -182,6 +187,12 @@ public class Client {
         new Thread(() -> {
             while (true) {
                 try {
+                    if (!clientSocket.isConnected())
+                    {
+                        System.out.println("reconnect...");
+                        clientSocket.reconnect();
+                    }
+
                     Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
                     if (clipboard.isDataFlavorAvailable(DataFlavor.javaFileListFlavor)) {
                         try {
@@ -193,26 +204,46 @@ public class Client {
                                     if (file != null && (lastClipboard == null || !lastClipboard.equals(file))) {
                                         lastClipboard = file;
 
-                                        String fileData = Base64.encodeBase64URLSafeString(Util.gzipCompress(Files.readAllBytes(file.toPath())));
-                                        List<String> fileDataParts = Util.splitEqually(fileData, 8192);
-
                                         final String fileID = UUID.randomUUID().toString();
                                         FileTransferStart transferStart = new FileTransferStart();
-                                        transferStart.fileID = fileID;
-                                        transferStart.packageCount = fileDataParts.size();
+                                        transferStart.fileID = fileID.hashCode();
                                         transferStart.filename = file.getName();
                                         client.clientSocket.sendTCP(new Message<>(Methods.FILE_START, serverKey, transferStart));
 
-                                        for (long i = 0; i < fileDataParts.size(); i++) {
+                                        byte[] buffer = new byte[8192 * 2];
+                                        final double packageCount = file.length() / buffer.length;
+                                        int counter = 0;
+
+                                        FileInputStream fis = new FileInputStream(file);
+                                        while(fis.read(buffer) != -1)
+                                        {
+                                            byte[]compress = Util.gzipCompress(buffer);
+
                                             FileTransferPart fileTransfer = new FileTransferPart();
-                                            fileTransfer.fileID = fileID;
-                                            fileTransfer.idx = i;
-                                            fileTransfer.part = fileDataParts.get(Math.toIntExact(i));
+                                            fileTransfer.fileID = fileID.hashCode();
+                                            fileTransfer.idx = counter;
+                                            fileTransfer.part = compress;
                                             client.clientSocket.sendTCP(new Message<>(Methods.FILE_PART, serverKey, fileTransfer));
+
+                                            counter++;
+
+                                            double percentage = (counter / packageCount * 100);
+                                            if (percentage % 1 == 0) {
+                                                System.out.println("file send progress: " + percentage + "%");
+                                            }
+
+                                            while (!client.clientSocket.isIdle())
+                                            {
+                                                Thread.sleep(10);
+                                                client.clientSocket.update(5000);
+                                            }
                                         }
 
+                                        fis.close();
+
                                         FileTransferEnd transferEnd = new FileTransferEnd();
-                                        transferEnd.fileID = fileID;
+                                        transferEnd.fileID = fileID.hashCode();
+                                        transferEnd.packageCount = counter;
                                         client.clientSocket.sendTCP(new Message<>(Methods.FILE_END, serverKey, transferEnd));
                                     }
                                 }

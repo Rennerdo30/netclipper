@@ -3,6 +3,7 @@ package netclipper.networking;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
+import com.esotericsoftware.kryonet.util.InputStreamSender;
 import netclipper.Util;
 import netclipper.transfer.file.FileTransferEnd;
 import netclipper.transfer.file.FileTransferPart;
@@ -24,7 +25,7 @@ public class Server {
     public static void run()
     {
         try {
-            com.esotericsoftware.kryonet.Server server = new com.esotericsoftware.kryonet.Server(1638400, 204800);
+            com.esotericsoftware.kryonet.Server server = new com.esotericsoftware.kryonet.Server(16384000, 2048000);
 
             Kryo kryo = server.getKryo();
             kryo.register(Message.class);
@@ -38,11 +39,20 @@ public class Server {
             Server.publicKey = (PublicKey) keys.get("public");
 
             server.addListener(new Listener() {
+
+                @Override
+                public void connected(Connection connection) {
+                    super.connected(connection);
+
+                    connection.setKeepAliveTCP(10000);
+                    connection.setTimeout(25000);
+                }
+
                 public void received (Connection connection, Object object) {
                     if (object instanceof Message) {
                         Message request = (Message)object;
 
-                        System.out.println("Got message! type:" + request.method.toString());
+                        //System.out.println("Got message! type:" + request.method.toString());
 
                         if (request.method == Methods.PUB_KEY) {
                             try {
@@ -81,10 +91,9 @@ public class Server {
                                 server.sendToTCP(entry.getKey(), response);
                             }
                         }else if (request.method == Methods.FILE_PART) {
-                            System.out.println("Message recieved: " + request.payload);
+                            //System.out.println("Message recieved: FILE_PART");
 
                             FileTransferPart payload = (FileTransferPart) request.getPayload(privateKey);
-                            System.out.println("payload: " + payload);
 
                             for (Map.Entry<Integer, PublicKey> entry : Server.clientKeys.entrySet()) {
                                 if (entry.getKey() == connection.getID())

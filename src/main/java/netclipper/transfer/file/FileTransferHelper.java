@@ -33,7 +33,12 @@ public class FileTransferHelper {
     }
 
     public boolean isReady() {
-        return this.fileTransferStart.packageCount == this.fileTransferParts.size() && this.fileTransferEnd != null;
+        if (this.fileTransferEnd == null)
+        {
+            return false;
+        }
+
+        return this.fileTransferEnd.packageCount == this.fileTransferParts.size() && this.fileTransferEnd != null;
     }
 
     public File store() {

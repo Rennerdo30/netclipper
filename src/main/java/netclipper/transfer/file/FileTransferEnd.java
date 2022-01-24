@@ -4,6 +4,7 @@ import java.io.Serializable;
 
 public class FileTransferEnd implements Serializable {
 
-    public String fileID;
+    public int fileID;
+    public long packageCount;
 
 }

@@ -4,8 +4,7 @@ import java.io.Serializable;
 
 public class FileTransferStart implements Serializable {
 
-    public String fileID;
-    public long packageCount;
+    public int fileID;
     public String filename;
 
 }

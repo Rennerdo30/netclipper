@@ -4,8 +4,8 @@ import java.io.Serializable;
 
 public class FileTransferPart implements Serializable {
 
-    public String fileID;
+    public int fileID;
     public long idx;
-    public String part;
+    public byte[] part;
 
 }
