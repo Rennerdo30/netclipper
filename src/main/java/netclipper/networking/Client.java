@@ -138,7 +138,7 @@ public class Client {
                 fileTransferHelpers.put(fileTransferStart.fileID, fileTransferHelper);
 
             } else if (response.method == Methods.FILE_PART) {
-                System.out.println(response.payload);
+                //System.out.println(response.payload);
 
                 try {
                     FileTransferPart fileTransferPart = (FileTransferPart) response.getPayload(privateKey);

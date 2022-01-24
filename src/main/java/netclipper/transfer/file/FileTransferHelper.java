@@ -3,7 +3,9 @@ package netclipper.transfer.file;
 import netclipper.Util;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.HashMap;
@@ -45,7 +47,13 @@ public class FileTransferHelper {
         File file = new File("tmp_clipboard/" + this.fileTransferStart.filename);
 
         try {
-            Files.write(file.toPath(), Util.gzipUncompress(Base64.decodeBase64(getCompleteBuffer())));
+            FileOutputStream fos = new FileOutputStream(file);
+            for (Map.Entry<Long, FileTransferPart> entry : this.fileTransferParts.entrySet()) {
+               byte[] data = Util.gzipUncompress(entry.getValue().part);
+               fos.write(data);
+            }
+            fos.close();
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -53,13 +61,4 @@ public class FileTransferHelper {
         return file;
     }
 
-    private String getCompleteBuffer() {
-        StringBuffer buffer = new StringBuffer(1000);
-
-        for (Map.Entry<Long, FileTransferPart> entry : this.fileTransferParts.entrySet()) {
-            buffer.append(entry.getValue().part);
-        }
-
-        return buffer.toString();
-    }
 }
